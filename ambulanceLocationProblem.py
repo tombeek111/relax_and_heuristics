@@ -4,7 +4,7 @@ from itertools import product
 #from numpy import *
 
 # Open data set file
-F = open('./Ambulance instances/Region01.txt','r') 
+F = open('./Ambulance instances/Region02.txt','r') 
 #F = open('ambulance_test.txt','r') 
 
 [n,p] =[range(0, int(s)) for s in F.readline().split()]
