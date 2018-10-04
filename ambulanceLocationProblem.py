@@ -1,5 +1,6 @@
 import numpy as np
 from pulp import *
+from itertools import product
 #from numpy import *
 
 # Open data set file
@@ -22,3 +23,7 @@ x = LpVariable.dict("x",(n,n),0,1,LpBinary)
 
 y = LpVariable.dict("x",n,0,1,LpBinary)
 
+
+
+
+prob += lpSum(x[u,v] * w[v] * d[u,v] for u,v in product(n,n))
