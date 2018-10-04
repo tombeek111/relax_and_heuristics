@@ -13,3 +13,12 @@ d = np.empty([len(n),len(n)])
 
 for i in n:
     d[i] = [int(s) for s in F.readline().split()]
+    
+# Initialize minimization problem
+prob = LpProblem("Ambulance location problem",LpMinimize)
+
+x = LpVariable.dict("x",(n,n),0,1,LpBinary)
+
+
+y = LpVariable.dict("x",n,0,1,LpBinary)
+
