@@ -26,4 +26,28 @@ y = LpVariable.dict("x",n,0,1,LpBinary)
 
 
 
-prob += lpSum(x[u,v] * w[v] * d[u,v] for u,v in product(n,n))
+prob += lpSum(x[u,v] * w[v] * d[u,v] for u,v in product(n,n)), "Minimize costs"
+
+for u in n:
+    prob += lpSum(x[u,v] for v in n) == 1
+    
+for u in n:
+    for v in n:
+        prob += x[u,v] <= y[v]
+        
+prob += lpSum(y[u] for u in n) <= len(p)
+
+# Write problem to LP file
+prob.writeLP("operatingRoomAssignment.lp")
+
+# Solve problem using CPLex
+solver = CPLEX()
+prob.setSolver(solver)
+prob.solve()
+
+# The status of the solution is printed to the screen
+print("Status:", LpStatus[prob.status])
+
+# Each of the variables is printed with it's resolved optimum value
+#for v in prob.variables():
+#    print(v.name, "=", v.varValue)
