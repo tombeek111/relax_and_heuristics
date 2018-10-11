@@ -33,7 +33,7 @@ def createLp(N,p,w,D,binary=True):
         y = pulp.LpVariable.dict("y",N,0,1)
         
     #set cost function
-    P += pulp.lpSum(x[u,v] * w[v] * D[u,v] for u,v in product(N,N))
+    P += pulp.lpSum(x[u,v] * w[u] * D[u,v] for u,v in product(N,N))
     
     #Add constraints
     #serve each city
@@ -54,19 +54,23 @@ values = {}
 for name,P in problems.items():
     #call solver in this way, instead of using P.solve(), to set the cplex logs streams
     cplex_solver = pulp.CPLEX_PY(msg=0)
-    cplex_solver.buildSolverModel(P)
+    if cplex_solver.available():
+        cplex_solver.buildSolverModel(P)
+        
+        logFile = 'solver_{0}.log'.format(name)
+        cplex_solver.solverModel.set_log_stream(logFile)
+        cplex_solver.solverModel.set_results_stream(logFile)
+        cplex_solver.solverModel.set_warning_stream(logFile)
+        cplex_solver.solverModel.set_error_stream(logFile)
     
-    logFile = 'solver_{0}.log'.format(name)
-    cplex_solver.solverModel.set_log_stream(logFile)
-    cplex_solver.solverModel.set_results_stream(logFile)
-    cplex_solver.solverModel.set_warning_stream(logFile)
-    cplex_solver.solverModel.set_error_stream(logFile)
-
-
-    cplex_solver.callSolver(P)
-    status = cplex_solver.findSolutionValues(P)
     
-    P.setSolver(cplex_solver)
+        cplex_solver.callSolver(P)
+        status = cplex_solver.findSolutionValues(P)
+        
+        P.setSolver(cplex_solver)
+    else:
+        print('Cplex solver not available, using standard')
+        P.solve()
         
     print('Solved {0} problem. Status: {1}'.format(name,status))
     if name == 'binary':
