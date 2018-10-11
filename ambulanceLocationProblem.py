@@ -1,99 +1,67 @@
 import numpy as np
-from pulp import *
+import pulp
 from itertools import product
-#from numpy import *
+import sys
 
-# Open data set file
-F = open('./Ambulance instances/Region02.txt','r') 
-#F = open('ambulance_test.txt','r') 
-
-[n,p] =[range(0, int(s)) for s in F.readline().split()]
-
-w = [int(s) for s in F.readline().split()]
-
-d = np.empty([len(n),len(n)])
-
-for i in n:
-    d[i] = [int(s) for s in F.readline().split()]
+##% Load file
+if len(sys.argv) > 1:
+    filename = sys.argv[1]
+    print('Using command line file: {0}'.format(filename))
+else:
+    filename = './Ambulance instances/Region05.txt'
+    print('Using hardcoded filename: {0}'.format(filename))
     
-# Initialize minimization problem
-prob = LpProblem("Ambulance location problem",LpMinimize)
+with open(filename,'r') as f:
+    [n,p] =[int(s) for s in f.readline().split()]
+    N = range(n)
+    w = [int(s) for s in f.readline().split()]
+    D = np.empty([n,n])
+    for i in N:
+        D[i] = [int(s) for s in f.readline().split()]
 
-x = LpVariable.dict("x",(n,n),0,1,LpBinary)
-
-
-y = LpVariable.dict("y",n,0,1,LpBinary)
-
-
-
-
-prob += lpSum(x[u,v] * w[v] * d[u,v] for u,v in product(n,n)), "Minimize costs"
-
-for u in n:
-    prob += lpSum(x[u,v] for v in n) == 1
+#%% Create LP problems
+def createLp(N,p,w,D,binary=True):
+    #Create LP object
+    P = pulp.LpProblem("Ambulance location problem",pulp.LpMinimize)
     
-for u in n:
-    for v in n:
-        prob += x[u,v] <= y[v]
+    #Create variables
+    if binary:
+        x = pulp.LpVariable.dict("x",(N,N),0,1,pulp.LpBinary)
+        y = pulp.LpVariable.dict("y",N,0,1,pulp.LpBinary)
+    else:
+        x = pulp.LpVariable.dict("x",(N,N),0,1)
+        y = pulp.LpVariable.dict("y",N,0,1)
         
-prob += lpSum(y[u] for u in n) <= len(p)
-
-# Write problem to LP file
-prob.writeLP("operatingRoomAssignment.lp")
-
-# Solve problem using CPLex
-solver = CPLEX()
-prob.setSolver(solver)
-prob.solve()
-prob.roundSolution()
-
-ambulance_posts = []
-for u in n:
-    if value(y[u]) == 1:
-        ambulance_posts.append(u)
-        
-ambulance_paths = []
-for u,v in product(n,n):
-    if value(x[u,v]) == 1:
-        ambulance_paths.append((u,v))
+    #set cost function
+    P += pulp.lpSum(x[u,v] * w[v] * D[u,v] for u,v in product(N,N))
     
-
-# The status of the solution is printed to the screen
-integer_value = value(prob.objective)
-
-print("Status:", LpStatus[prob.status])
-
-#%% Relaxed problem
-prob = LpProblem("Ambulance location problem",LpMinimize)
-
-x = LpVariable.dict("x",(n,n),lowBound=0,upBound=1)
-y = LpVariable.dict("y",n,lowBound=0,upBound=1)
-
-
-
-prob += lpSum(x[u,v] * w[v] * d[u,v] for u,v in product(n,n)), "Minimize costs"
-
-for u in n:
-    prob += lpSum(x[u,v] for v in n) == 1
-    
-for u in n:
-    for v in n:
-        prob += x[u,v] <= y[v]
+    #Add constraints
+    #serve each city
+    for u in N:
+        P += pulp.lpSum(x[u,v] for v in N) == 1
         
-prob += lpSum(y[u] for u in n) <= len(p)
+    #Only select an edge(u,v) if there is an ambulance post at v
+    for u,v in product(N,N):
+        P += x[u,v] <= y[v]
+    
+    #Max p ambulance posts
+    P += pulp.lpSum(y[u] for u in N) <= p
+    
+    return P
 
-# Write problem to LP file
-prob.writeLP("operatingRoomAssignment.lp")
-
-# Solve problem using CPLex
-solver = CPLEX()
-prob.setSolver(solver)
-prob.solve()
-
-relaxed_value = value(prob.objective)
-print(relaxed_value,integer_value,relaxed_value/integer_value)
-
-
-# Each of the variables is printed with it's resolved optimum value
-#for v in prob.variables():
-#    print(v.name, "=", v.varValue)
+problems = {'binary' : createLp(N,p,w,D,True),'relaxed' : createLp(N,p,w,D,False)}
+values = {}
+for name,P in problems.items():
+    P.setSolver(pulp.CPLEX())
+    status = P.solve()
+    
+    print('Solved {0} problem. Status: {1}'.format(name,status))
+    if name == 'binary':
+        #Round solutions to change values like 0.999999 to 1
+        P.roundSolution()
+    
+    value = pulp.value(P.objective)
+    print('{0} problem objective value: {1}'.format(name,value))
+    values[name] = value
+    
+print('Ratio Relaxed/Binary: {0:.3f}'.format(values['relaxed']/values['binary']))
