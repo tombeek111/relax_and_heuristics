@@ -8,7 +8,7 @@ if len(sys.argv) > 1:
     filename = sys.argv[1]
     print('Using command line file: {0}'.format(filename))
 else:
-    filename = './Ambulance instances/Region05.txt'
+    filename = './Ambulance instances/Region01.txt'
     print('Using hardcoded filename: {0}'.format(filename))
     
 with open(filename,'r') as f:
@@ -52,9 +52,22 @@ def createLp(N,p,w,D,binary=True):
 problems = {'binary' : createLp(N,p,w,D,True),'relaxed' : createLp(N,p,w,D,False)}
 values = {}
 for name,P in problems.items():
-    P.setSolver(pulp.CPLEX())
-    status = P.solve()
+    #call solver in this way, instead of using P.solve(), to set the cplex logs streams
+    cplex_solver = pulp.CPLEX_PY(msg=0)
+    cplex_solver.buildSolverModel(P)
     
+    logFile = 'solver_{0}.log'.format(name)
+    cplex_solver.solverModel.set_log_stream(logFile)
+    cplex_solver.solverModel.set_results_stream(logFile)
+    cplex_solver.solverModel.set_warning_stream(logFile)
+    cplex_solver.solverModel.set_error_stream(logFile)
+
+
+    cplex_solver.callSolver(P)
+    status = cplex_solver.findSolutionValues(P)
+    
+    P.setSolver(cplex_solver)
+        
     print('Solved {0} problem. Status: {1}'.format(name,status))
     if name == 'binary':
         #Round solutions to change values like 0.999999 to 1
@@ -62,6 +75,7 @@ for name,P in problems.items():
     
     value = pulp.value(P.objective)
     print('{0} problem objective value: {1}'.format(name,value))
+    print('Log file: {0}'.format(logFile))
     values[name] = value
     
 print('Ratio Relaxed/Binary: {0:.3f}'.format(values['relaxed']/values['binary']))

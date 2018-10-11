@@ -1,3 +1,8 @@
+The assignment was created with Python. Version 3.6 was used, since the cplex api is not available for version 3.7. 
+Pulp was used to formulate the problem. 
+
+
+####
 Install pulp:
 
 Using conda: 
@@ -12,15 +17,16 @@ Using pip:
 1. Enter in CMD:
 pip install pulp
 
-
+####
 Install Cplex python api (assuming Cplex is already installed). This assumes python version 3.6
+
 1. Go to C:\Program Files\IBM\ILOG\CPLEX_Studio128\cplex\python\3.6\x64_win64 (depending on your cplex installation directory)
 2. Start CMD (if needed as administrator)
 3. Run python setup.py install
 
 
 
-
+####
 Run the code:
 Enter in CMD:
 python ambulanceLocationProblem.py "path/to/file"
