@@ -1,0 +1,30 @@
+Install pulp:
+
+Using conda: 
+1. add Conda-forge repository first if not already added:
+Enter in CMD or anaconda prompt:
+conda config --add channels conda-forge
+
+2. Enter in CMD or anaconda prompt:
+conda install pulp
+
+Using pip:
+1. Enter in CMD:
+pip install pulp
+
+
+Install Cplex python api (assuming Cplex is already installed). This assumes python version 3.6
+1. Go to C:\Program Files\IBM\ILOG\CPLEX_Studio128\cplex\python\3.6\x64_win64 (depending on your cplex installation directory)
+2. Start CMD (if needed as administrator)
+3. Run python setup.py install
+
+
+
+
+Run the code:
+Enter in CMD:
+python ambulanceLocationProblem.py "path/to/file"
+
+For example:
+python ambulanceLocationProblem.py "Ambulance instances/Region01.txt"
+
