@@ -10,6 +10,7 @@ class AmbulanceLocationInstance():
     def __init__(self,name='alp'):
         self.binary = False
         self.name = name
+        self.additionalCuts = []
     
     def loadFile(self,filename):
         with open(filename,'r') as f:
@@ -47,6 +48,15 @@ class AmbulanceLocationInstance():
         
         #Max p ambulance posts
         P += pulp.lpSum(y[u] for u in N) <= self.p
+        
+        if 'dominated_edges' in self.additionalCuts:
+            #Hier cut van marcel
+            pass
+        
+        if 'partitions' in self.additionalCuts:
+            #hier cut van Tom
+            pass
+        
         self.P = P
         return P
 
