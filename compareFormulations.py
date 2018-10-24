@@ -3,7 +3,7 @@ from ambulanceLocationInstance import AmbulanceLocationInstance
 import logging
 import os
 
-additional_cuts = []
+additional_cuts = ['dominated_edges','partitions']
 
 logging.basicConfig(level=logging.INFO)
 files = ['solutions/pmed1.txt']
