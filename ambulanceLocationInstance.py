@@ -114,7 +114,7 @@ class AmbulanceLocationInstance():
 
     def solve(self):
         P = self.P
-        cplex_solver = pulp.CPLEX_PY(msg=0)
+        cplex_solver = pulp.CPLEX_PY(msg=0,mip=self.binary)
         if cplex_solver.available():
             cplex_solver.buildSolverModel(P)
             
