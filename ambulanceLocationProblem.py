@@ -8,7 +8,7 @@ if len(sys.argv) > 1:
     filename = sys.argv[1]
     print('Using command line file: {0}'.format(filename))
 else:
-    filename = './Ambulance instances/Region01.txt'
+    filename = 'solutions/pmed2.txt'
     print('Using hardcoded filename: {0}'.format(filename))
     
 with open(filename,'r') as f:
