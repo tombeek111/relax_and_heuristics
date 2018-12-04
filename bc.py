@@ -92,8 +92,12 @@ class SubProblem():
     
     def compute_ub(self):
         #Hier greedy solution of sim/ann. Schrijf waardes naar self.ub en self.y
-        self.ub = 10
-        self.y = [1]
+        self.y_one = []
+        self.y_zero = []
+        
+        
+        #self.ub = 10
+        #self.y = [1]
         
     def create_lp(self):
         problem = self.solver.problem
