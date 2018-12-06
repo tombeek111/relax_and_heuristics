@@ -2,6 +2,7 @@
 import numpy as np
 import pulp
 from itertools import product
+from simulatedAnnealing import SAInstance
 
 class Solver:
     def do_branch_cut(self):
@@ -95,9 +96,11 @@ class SubProblem():
         self.y_one = []
         self.y_zero = []
         
+        saInstance = SAInstance(problem.N,problem.w,problem.D,problem.p)
+        solution = saInstance.greedy(self.y_one,self.y_zero)
         
-        #self.ub = 10
-        #self.y = [1]
+        self.ub = solution.objective()
+        self.y = solution.solution
         
     def create_lp(self):
         problem = self.solver.problem
