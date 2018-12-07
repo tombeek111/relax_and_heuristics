@@ -4,6 +4,8 @@ import random
 import numpy as np
 from itertools import product
 import math
+import sys
+import time
 
 class ProbabilityAlg:
     
@@ -86,6 +88,16 @@ class ProbabilityAlg:
         x = alg.get_x(alg.y)
         return y,alg.get_obj(x)
     
+    def run(self,n):
+        best_obj = np.inf
+        best_solution = None
+        for i in range(n):
+            y,obj = self.get_heuristic_solution()
+            if obj < best_obj:
+                best_obj = obj
+                best_solution = y
+        return best_solution,best_obj
+    
     def get_y(self,x,N):
         N = self.ali.N
         y = {i : 0 for i in N}
@@ -113,18 +125,18 @@ def round_x(probAlg,x_rel,y_rel):
     return y
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and False:
     funcs = {'round_x': round_x,'round_y' : round_y}
     results = {}
     
-    total_iterations = 1000
-    stepsize = 25
+    total_iterations = 100
+    stepsize = 100
     
     for name, func in funcs.items():
         results[name] = []
         
         
-        alg  = ProbabilityAlg('solutions/pmed38.txt')#38
+        alg  = ProbabilityAlg('solutions/pmed2.txt')#38
         alg.random_solution_func = func
         for i in range(total_iterations):
             y,obj = alg.get_heuristic_solution()
@@ -147,4 +159,24 @@ if __name__ == '__main__':
             best_results[name].append(min(step_result))
     
         print(name + ' best avg',np.mean(best_results[name]))
+    
+    
+if __name__ == '__main__':
+    filename = 'solutions/pmed38.txt'
+    alg  = ProbabilityAlg(filename)#38
+    alg.random_solution_func = round_x
+    
+    t = time.time()
+    
+    y,obj = alg.run(1000)
+    print('random',obj)
+    print(time.time()-t)
+    sys.argv = ['',filename]
+    
+    
+    #exec(open('simulatedAnnealing.py').read())
+    t = time.time()
+    import simulatedAnnealing
+    print ('random',simulatedAnnealing.sa_sol)
+    print(time.time()-t)
     
