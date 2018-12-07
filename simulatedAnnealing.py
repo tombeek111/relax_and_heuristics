@@ -3,7 +3,7 @@ import random
 import math
 import sys
 import itertools
-from ambulanceLocationInstance import AmbulanceLocationInstance
+#from ambulanceLocationInstance import AmbulanceLocationInstance
 
 ##% Load file
 if len(sys.argv) > 1:
@@ -91,7 +91,7 @@ def initialT():
                 weightedSum += w[j] * D[j][i]
         if weightedSum > largestSum:
             largestSum = weightedSum
-    return largestSum * 10
+    return largestSum * 2.5
 
 def acceptanceProbability(currentObjective, nextObjective, temperature):
     coefficient =  -(abs(currentObjective - nextObjective)) / temperature
@@ -112,42 +112,56 @@ def greedy(p):
         solution = bestCandidate
     return solution
 
-def SA(initialSolution, M):
+def SA(initialSolution, M,stopafter=100):
     currentSolution = initialSolution
     bestSolution = currentSolution
     bestObjective = objective(currentSolution)
     currentObjective = bestObjective
     temperature = initialT()
+    lastAccept = 0
+    
     
     for t in range(1, M):
+        if t-lastAccept > stopafter:
+            break
+        
         nextSolution = mutateSolution(currentSolution)
         nextObjective = objective(nextSolution)
         #If the new solution is better, replace the current solution
-        if objective(nextSolution) < objective(currentSolution):
+        if nextObjective < currentObjective:
             
             currentSolution = nextSolution
             currentObjective = nextObjective
+            lastAccept = t
         else:
-            temperature = temperature * 0.99
-            if random.random() > acceptanceProbability(currentObjective, nextObjective, temperature):
+            temperature = temperature * 0.9
+            accProb = acceptanceProbability(currentObjective, nextObjective, temperature)
+            #print(temperature,accProb)
+            if random.random() <= accProb:
                 currentSolution = nextSolution
                 currentObjective = nextObjective
+                lastAccept = t
        
         if currentObjective < bestObjective:
             bestObjective = currentObjective
             bestSolution = currentSolution
     return bestSolution
     
-M = 100
+M = 1000
+stopAfter = 25
 initialSolution = neighborhoodSearch(randomSolution())
-print(objective(initialSolution))
-print(objective(SA(initialSolution, M)))
-
-ali = AmbulanceLocationInstance()
-ali.loadFile(filename)
+#print('nbs',objective(initialSolution))
+#%%
+solution = SA(initialSolution, M,stopAfter)
+sa_sol = objective(solution)
+print('objective value :',sa_sol)
+print('ambulance locations: ',solution)
+#print('sa sol',sa_sol)
+#ali = AmbulanceLocationInstance()
+#ali.loadFile(filename)
 #ali.binary = False
-ali.createLp()
-ali.solve()
+#ali.createLp()
+#ali.solve()
 
 #print(bestObjective)
-print(ali.objective)
+#print(ali.objective)
