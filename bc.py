@@ -3,12 +3,16 @@ import numpy as np
 import pulp
 from itertools import product
 from simulatedAnnealing import SAInstance
-
+import copy 
 class Solver:
+    def __init__(self):
+        self.verbose = True
+        
+        
     def do_branch_cut(self):
         global_ub = np.inf
         global_lb = np.inf
-        
+        best_solution = None
         
         P = SubProblem(self)
   
@@ -17,24 +21,43 @@ class Solver:
         active_nodes = [P]
         while active_nodes:
             P = active_nodes[0]
-            
+            del active_nodes[0]
             try:
                 
+                #Get lower bound, keep adding cuts until it is not possible
+                first = True
                 while True:
+                    
+                    
+                    P.create_lp()
+                    if not first:
+                        cuts_added = self.add_cuts(P)
+                        if not cuts_added:
+                            break
+                        
+                        
                     P.compute_lb()
+                    
                     if P.is_integer or P.lb >= global_ub:
                         break
                     
-                    cuts_added = self.add_cuts(P)
-                    if not cuts_added:
-                        break
+                        
+                    
+                    first = False
                 
+                #Get upper bound
+                if P.is_integer:
+                    #P is integer, so lb = ub
+                    P.ub = P.lb
+                    P.y = P.y_relax
+                else:
+                    P.compute_ub()
                 
-                
-                P.compute_ub()
             except InfeasibleSubproblem:
                 #pruned by infeasibility
                 continue
+            
+            print('{0} {1}'.format(P.lb,P.ub))
             
             if P.lb >= global_ub:
                 #Pruned because of too high lb
@@ -43,26 +66,49 @@ class Solver:
             if P.ub <= global_ub:
                 global_ub = P.ub
                 best_solution = P.y
+                print('found new global ub')
                 #Found best global ub
             
             
             if P.lb == P.ub:
                 #Pruned by optimality
+                print('lb = ub')
                 continue
             
             
-            #P1,P2 = self.branch(P)
-            #active_nodes.extend([P1,P2])
-            del active_nodes[0]
+            P1,P2 = self.branch(P)
+            active_nodes.extend([P1,P2])
+            print('branch. Length {0}'.format(len(active_nodes)))
+        self.solution = best_solution
+        self.objective = global_ub
 
     
     def add_cuts(self,P):
-        #Add cuts
+        #Add cuts to P.P
+        
+        #If cuts are added, return True
         return False
 
     def branch(self,P):
-        pass
-    
+        P1 = SubProblem(self)
+        P1.y_one = copy.copy(P.y_one)
+        P1.y_zero = copy.copy(P.y_zero)
+        
+        P2 = SubProblem(self)
+        P2.y_one = copy.copy(P.y_one)
+        P2.y_zero = copy.copy(P.y_zero)
+        
+        #branch on closest to one
+        
+        
+        y_branch = max(P.y_noninteger, key=P.y_noninteger.get)
+        
+        #set fixed y
+        P1.y_one.append(y_branch)
+        P2.y_zero.append(y_branch)
+        
+        return P1,P2
+       
 
 class InfeasibleSubproblem(BaseException):
     pass
@@ -81,20 +127,35 @@ class SubProblem():
     def __init__(self,solver):
         self.is_integer = False
         self.solver = solver
+        self.ub = None
+        self.lb = None
+        self.y_one = []
+        self.y_zero = []
         
     def compute_lb(self):
-        self.create_lp()
+        
         self.solve_relaxation()
         
     def solve_relaxation(self):
         self.P.solve()
+        self.P.roundSolution()
         self.lb = pulp.value(self.P.objective)
+        self.y_relax = {key:pulp.value(self.y_var[key]) for key in self.y_var}
+        
+        #Check if integer
+        self.is_integer=True
+        self.y_noninteger = {}
+        for key,value in self.y_relax.items():
+            if not value.is_integer():
+                self.is_integer = False
+                self.y_noninteger[key] = value
+     
+     
 
     
     def compute_ub(self):
         #Hier greedy solution of sim/ann. Schrijf waardes naar self.ub en self.y
-        self.y_one = []
-        self.y_zero = []
+
         
         saInstance = SAInstance(problem.N,problem.w,problem.D,problem.p)
         solution = saInstance.greedy(self.y_one,self.y_zero)
@@ -113,6 +174,14 @@ class SubProblem():
         #Create variables
         x = pulp.LpVariable.dict("x",(N,N),0,1)
         y = pulp.LpVariable.dict("y",N,0,1)
+        
+        #set fixed vars
+        for y_key in self.y_one:
+            y[y_key] = float(1) #float so is_integer can be called later
+            
+        for y_key in self.y_zero:
+            y[y_key] = float(0) #float so is_integer can be called later
+            
             
         self.x_var = x
         self.y_var = y
@@ -131,6 +200,10 @@ class SubProblem():
         #Max p ambulance posts
         P += pulp.lpSum(y[u] for u in N) <= problem.p
         
+        
+        
+        
+        
        
         
         self.P = P
@@ -139,9 +212,10 @@ class SubProblem():
         
 if __name__ == '__main__':
     problem = Problem()
-    problem.loadFile('Ambulance instances/region14.txt')
+    problem.loadFile('solutions/pmed2.txt')
     solver = Solver()
     solver.problem = problem
     
     solver.do_branch_cut()
+    print('Solution {0}'.format(solver.objective))
     
