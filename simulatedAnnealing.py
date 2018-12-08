@@ -61,7 +61,7 @@ class SAInstance():
             solution = bestCandidate
         return solution
 
-    def SA(self, initialSolution, M,stopafter=100):
+    def SA(self, initialSolution, M,stopafter=100, y_one=[], y_zero=[]):
         currentSolution = initialSolution
         bestSolution = currentSolution
         bestObjective = currentSolution.objective()
@@ -74,7 +74,7 @@ class SAInstance():
             if t-lastAccept > stopafter:
                 break
             
-            nextSolution = currentSolution.mutateSolution()
+            nextSolution = currentSolution.mutateSolution(y_one,y_zero)
             nextObjective = nextSolution.objective()
             #If the new solution is better, replace the current solution
             if nextObjective < currentObjective:
@@ -130,12 +130,13 @@ class SASolution():
         return totalWeight
 
     #Mutate solution
-    def mutateSolution(self):
+    def mutateSolution(self, y_one=[], y_zero=[]):
+        
         found = False
         while not found:
             newCity = random.randint(0,len(self.N) -1)
-            found = newCity not in self.solution
-        replaceCityIndex = random.randint(0,self.p - 1)
+            found = newCity not in self.solution and newCity not in y_zero
+        replaceCityIndex = random.randint(len(y_one),self.p - 1)
         newSolution = self.solution.copy()
         newSolution[replaceCityIndex] = newCity
         return SASolution(newSolution, self.instance)
