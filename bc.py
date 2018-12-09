@@ -11,7 +11,7 @@ class Solver:
         
     def do_branch_cut(self):
         global_ub = np.inf
-        global_lb = np.inf
+        global_lb = -np.inf
         best_solution = None
         
         P = SubProblem(self)
@@ -68,7 +68,11 @@ class Solver:
                 best_solution = P.y
                 print('found new global ub')
                 #Found best global ub
-            
+                
+            if P.lb > global_lb:
+                global_lb = P.lb
+                print('found new global lb')
+                #Found best global ub
             
             if P.lb == P.ub:
                 #Pruned by optimality
@@ -131,6 +135,7 @@ class SubProblem():
         self.lb = None
         self.y_one = []
         self.y_zero = []
+        self.sa = True
         
     def compute_lb(self):
         
@@ -141,6 +146,7 @@ class SubProblem():
         self.P.roundSolution()
         self.lb = pulp.value(self.P.objective)
         self.y_relax = {key:pulp.value(self.y_var[key]) for key in self.y_var}
+        self.x_relax = {key:pulp.value(self.x_var[key]) for key in self.x_var}
         
         #Check if integer
         self.is_integer=True
@@ -155,11 +161,10 @@ class SubProblem():
     
     def compute_ub(self):
         #Hier greedy solution of sim/ann. Schrijf waardes naar self.ub en self.y
-
-        
         saInstance = SAInstance(problem.N,problem.w,problem.D,problem.p)
         solution = saInstance.greedy(self.y_one,self.y_zero)
-        
+        if self.sa:
+            solution = saInstance.SA(solution,10000)
         self.ub = solution.objective()
         self.y = solution.solution
         
@@ -213,6 +218,7 @@ class SubProblem():
 if __name__ == '__main__':
     problem = Problem()
     problem.loadFile('solutions/pmed2.txt')
+#    problem.loadFile('harder instances/vm1748.txt')
     solver = Solver()
     solver.problem = problem
     
