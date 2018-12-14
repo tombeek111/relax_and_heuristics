@@ -44,27 +44,62 @@ class SAInstance():
         sample = random.sample(sampleRange, self.p)
         sample[:len(y_one)] = y_one
         return SASolution(sample, self)
-
+    
+#    Outdated greedy implementation
+#    def greedy(self, y_one = [], y_zero = []):
+#        solution = SASolution(y_one, self)
+#        for i in range(0,self.p - len(y_one)):
+#            bestObjectiveCandidate = math.inf
+#            bestCandidate = SASolution([], self)
+#            for j in range(1, len(self.N)):
+#                if ((j not in solution.solution) and (j not in y_zero)):
+#                    candidate = SASolution(solution.solution + [j], self)
+##                    candidate = solution + [j]
+#                    objectiveCandidate = candidate.objective
+#                    if objectiveCandidate < bestObjectiveCandidate:
+#                        bestObjectiveCandidate = objectiveCandidate
+#                        bestCandidate = candidate
+#            solution = bestCandidate
+#        return solution
+#    
     def greedy(self, y_one = [], y_zero = []):
         solution = SASolution(y_one, self)
+        nearest = [-1] * len(self.N)
+        if len(y_one) > 0:
+            nearest = [y_one[0]] * len(nearest)
+            for i in range(1,len(y_one)):
+                nearest = list(map(lambda x: y_one[i] if self.D[x[1]][x[0]] > self.D[x[1]][y_one[i]] else x[0], zip(nearest,self.N)))
+        
         for i in range(0,self.p - len(y_one)):
+            bestObjective = solution.objective       
             bestObjectiveCandidate = math.inf
-            bestCandidate = SASolution([], self)
+            bestCandidate = -1
+#            bestCandidate = SASolution([], self)
             for j in range(1, len(self.N)):
                 if ((j not in solution.solution) and (j not in y_zero)):
-                    candidate = SASolution(solution.solution + [j], self)
-#                    candidate = solution + [j]
-                    objectiveCandidate = candidate.objective()
+                    if len(solution.solution) == 0:
+                        objectiveCandidate = SASolution(solution.solution + [j], self).objective
+                    else:
+                        objectiveCandidate = bestObjective
+                        for k in range(0, len(nearest)):
+                            if self.D[k][j] < self.D[k][nearest[k]]:
+                                objectiveCandidate = objectiveCandidate - self.w[k] * self.D[k][nearest[k]] + self.w[k] * self.D[k][j]
+                        
                     if objectiveCandidate < bestObjectiveCandidate:
                         bestObjectiveCandidate = objectiveCandidate
-                        bestCandidate = candidate
-            solution = bestCandidate
+                        bestCandidate = j
+            if len(solution.solution) == 0:
+                nearest = [bestCandidate] * len(self.N)
+            else:
+                nearest = list(map(lambda x: bestCandidate if self.D[x[1]][bestCandidate] < self.D[x[1]][x[0]] else x[0], zip(nearest,self.N)))
+            solution = SASolution(solution.solution + [bestCandidate], self, bestObjectiveCandidate)
+            
         return solution
 
     def SA(self, initialSolution, M,stopafter=100, y_one=[], y_zero=[]):
         currentSolution = initialSolution
         bestSolution = currentSolution
-        bestObjective = currentSolution.objective()
+        bestObjective = currentSolution.objective
         currentObjective = bestObjective
         temperature = self.initialT()
         lastAccept = 0
@@ -75,7 +110,7 @@ class SAInstance():
                 break
             
             nextSolution = currentSolution.mutateSolution(y_one,y_zero)
-            nextObjective = nextSolution.objective()
+            nextObjective = nextSolution.objective
             #If the new solution is better, replace the current solution
             if nextObjective < currentObjective:
                 
@@ -109,16 +144,22 @@ class SAInstance():
 
 
 class SASolution():
-    def __init__(self, solution, instance):
+    def __init__(self, solution, instance, objective= -1):
         self.solution = solution
         self.N = instance.N
         self.w = instance.w
         self.D = instance.D
         self.p = instance.p
         self.instance = instance
+        if objective == -1:
+            self.objective = self.calculateObjective()
+        else:
+            self.objective = objective
 
     #Calculate objective value of a solution
-    def objective(self):
+    def calculateObjective(self):
+        if len(self.solution) == 0:
+            return math.inf
         totalWeight = 0
         for i in self.N:
             if (i not in self.solution):
@@ -128,7 +169,7 @@ class SASolution():
                         minDistance = self.D[i][j]
                 totalWeight += self.w[i] * minDistance
         return totalWeight
-
+  
     #Mutate solution
     def mutateSolution(self, y_one=[], y_zero=[]):
         
