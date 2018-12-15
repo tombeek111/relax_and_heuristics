@@ -6,7 +6,7 @@ from simulatedAnnealing import SAInstance
 import copy 
 import pickle
 import time
-
+import sys
 
 #Todo: Infeasible error
 class Solver:
@@ -461,7 +461,7 @@ class SubProblem():
         saInstance = SAInstance(problem.N,problem.w,problem.D,problem.p)
         solution = saInstance.greedy(list(self.y_one),list(self.y_zero))
         
-        self.ub = solution.objective()
+        self.ub = solution.objective
         self.y = solution.solution
     
 
@@ -524,12 +524,29 @@ class SubProblem():
     
         
 if __name__ == '__main__':
+    
+    
+        
+    
+    if len(sys.argv) > 1:
+        branch_cut = '-bb' not in sys.argv
+        
+        filename = sys.argv[-1]
+    else:
+        branch_cut = True
+        filename = 'solutions/pmed16.txt'
+        
+    
+
+
+
     problem = Problem()
-    problem.loadFile('solutions/pmed26.txt')#16 2
+    problem.loadFile(filename)#16 26
+    print('Solving {0}'.format(filename))
     #problem.p = 8
     solver = Solver()
     solver.problem = problem
-    solver.branch_cut = True
+    solver.branch_cut = branch_cut
     
     t = time.time()
     solver.do_branch_cut()
