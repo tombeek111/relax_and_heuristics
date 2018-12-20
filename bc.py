@@ -460,6 +460,7 @@ class SubProblem():
         problem = self.problem
         saInstance = SAInstance(problem.N,problem.w,problem.D,problem.p)
         solution = saInstance.greedy(list(self.y_one),list(self.y_zero))
+        solution = saInstance.SA(solution, 100, y_one=self.y_one, y_zero=self.y_zero)
         
         self.ub = solution.objective
         self.y = solution.solution
